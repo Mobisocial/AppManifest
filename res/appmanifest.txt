@@ -1,0 +1,55 @@
+Application Manifest MIME type
+
+Motivation
+
+With the widespread adoption of smartphones, it has become common for a single application to have a different codebase for different platforms. Applications that once only existed on the web are now available from application stores provided by smartphone vendors. These applications are often more convenient than their web counterparts, and can take advantage of richer hardware support and deeper platform integration. Devices of different modalities (phones, televisions, tablets, PCs, etc.) also offer unique usability considerations that an application may use.
+
+A single application instance may also span multiple devices. Examples include multiplayer games and remotely controlled media applications. Such an application instantiation requires runtime arguments to differentiate between application instances. Each end-device may still run code specific to the device's platform and modality. A game may be available for two different mobile operating systems; a remotely-controlled media application has a different experience on a mobile device as compared to a television. 
+
+The Application Manifest is a MIME type for representing an application across multiple platforms. The Application Manifest is designed with the following goals and philosophies:
+
+  * Applications created by an authority may exist in different formats for different host platforms.
+  * Host platforms have unique capabilities and distinct representations for application code.
+  * Applications can accept runtime to customize an application invocation.
+  * A single host platform may be run on different device modalities (phone, pc), and an application may be run differently on each.
+
+Additionally, the Application Manifest format is designed to have a low memory footprint so it may be embedded in an NFC Forum tag or a QR code.
+
+
+Format
+
+The manifest acts as an intermediate representation between an application and a set of platforms for which it is available. The format includes a friendly name for the application ("Blackjack Express"), so it may be presented to a user, and a list of platform specifications. The layout of the platform specification serves as an invocation request between the application and a single platform.
+
+Each Platform Specification is composed of the following:
+  * A Platform Identifier; a well-known 4-byte ASCII sequence representing the host platform type. For example, 'WEBG' represents an HTTP GET request for content on the web platform.
+  * An integer representing the minimum required version of the host platform.
+  * An integer representing the device modality for the specification (eg, 0x02 represents a mobile phone, 0x04 a television)
+  * Platform-specific arguments for locating the application, potentially including application arguments.
+
+
+Platform Identifier
+A host platform is identified by a four byte sequence. The identifier serves as a binding between the host platform and the application's launch details.  
+
+Defining these identifiers is beyond the scope of this document, however we suggest the following scheme to facillitate the generation of unique platform identifiers. Choose three ascii characters to represent the platform. For example, the web platform is 'W' 'E' and 'B'. The final byte represents the platform's parametrization coding scheme, allowing for multiple application specifications per host platform.  The web platform has an HTTP GET request (http://example.com) as 'G' (platform identifier 'WEBG'), and in-lined HTML rendering (<html><body>Hello, world!</body></html>) as 'I' (platform identifier 'WEBI').
+
+Application Arguments
+Each platform specification must, at a minimum, have a way of representing the application in a way that is meaningful to the platform in question. Host platforms are also strongly encouraged to support a (platform-dependent) runtime argument for applications. The arguments field allows an application to service invocation-specific application details, such as runtime configuration information.
+
+
+TODO: 
+  * Add icon support
+  * Support shorter/longer arguments (>2GB) Useful when delivering full codebases?
+
+Encoding
+
+  The encoding of a .apm is a sequence of bytes as follows:
+  * The first four bytes are the integer value 0x41504d46 (ascii 'APMF'), the magic number for an application manifest.
+  * The next four bytes are an integer representing the length, in bytes, of the friendly name of the application.
+  * The next n bytes are a Unicode encoding of the friendly name of the application, where n is the integer previously read.
+  * The next four bytes are an integer representing the number of platform specifications encoded in the file.
+  * The bytes that follow encode the platform specifications. For the number of platform specifications previously determined, iterate:
+    * The first four bytes of the platform specification serve as the platform identifier.
+    * The next four bytes are read as an integer representing the minimum required platform version.
+    * The next four bytes are read as an integer representing the requested device modality.
+    * The next four bytes represent the integer length (in bytes) of the application arguments
+    * The next n bytes are the application arguments, where n is the previously read integer. 
